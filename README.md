@@ -93,6 +93,7 @@ Open your browser and navigate to:
 ├── app.py                     # Standalone Python HTTP/API backend server
 ├── scanner.py                 # Multi-threaded Python crawler engine (12 page threads / 18 asset threads)
 ├── .gitignore                 # Git ignore rules for binaries, archives, and system files
+├── LICENSE                    # Proprietary / All Rights Reserved license
 └── README.md                  # Comprehensive project documentation
 ```
 
@@ -111,4 +112,6 @@ If not set, the system defaults to `@yourcompany.com`.
 
 ## 📄 License & Ownership
 
-Open-source under the MIT License. Feel free to fork, adapt, and use for your web quality assurance workflows.
+Copyright (c) 2026 Ittipat Tavekeardtragoon. All Rights Reserved.
+
+This software and its documentation are proprietary. Unauthorized copying, modification, distribution, or commercial use of this codebase, via any medium, is strictly prohibited without prior written permission.
