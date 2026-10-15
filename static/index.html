@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CapiBug QA Auditor — Automatische Web-Qualitäts- & Broken-Link-Prüfung</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <!-- Security Gate Modal (Appears if not authorized) -->
+  <div id="authModalOverlay" class="auth-overlay hidden">
+    <div class="auth-card">
+      <div class="auth-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h2 class="auth-title">Mitarbeiter-Autorisierung</h2>
+      <p class="auth-desc">
+        Dieses interne QA-Werkzeug ist ausschließlich autorisierten Mitarbeitern mit einer offiziellen <strong id="authDomainNotice">@yourcompany.com</strong> E-Mail-Adresse vorbehalten.
+      </p>
+
+      <form id="authForm" class="auth-form">
+        <div class="auth-input-group">
+          <label for="authEmailInput">Ihre Firmen-E-Mail-Adresse:</label>
+          <input 
+            type="email" 
+            id="authEmailInput" 
+            class="auth-input" 
+            placeholder="vorname.nachname@yourcompany.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+        <div id="authErrorMsg" class="auth-error-msg hidden"></div>
+        <button type="submit" id="authSubmitBtn" class="btn btn-primary auth-submit-btn">
+          <span>Zugang freischalten</span>
+          <span class="btn-arrow">➔</span>
+        </button>
+      </form>
+      <div class="auth-footer">
+        Gesichert durch Corporate Access Control
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+            <circle cx="12" cy="12" r="7"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">CapiBug</span>
+          <span class="brand-badge">QA Auditor</span>
+        </div>
+      </div>
+      <div class="nav-right">
+        <div id="userBadge" class="user-badge hidden">
+          <span class="user-dot"></span>
+          <span id="userEmailText" class="user-email-text">user@yourcompany.com</span>
+          <button id="logoutBtn" class="logout-btn" title="Abmelden">✕</button>
+        </div>
+        <div class="nav-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Cloud Edge & Engine Aktiv</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-pill">
+        <span class="pill-spark">🔒</span>
+        <span>Internes Website-Health-, Broken-Link- & Asset-Audit-Tool</span>
+      </div>
+      <h1 class="hero-title">
+        Website-Qualität automatisiert prüfen<br>
+        <span class="gradient-text">Defekte Links & fehlerhafte Assets sofort finden</span>
+      </h1>
+      <p class="hero-desc">
+        Senior QA Web Automation Agent zur vollständigen Überprüfung von Sitemaps, defekten Links (404/500), fehlenden Bildern, beschädigten Dokumenten (PDF, Word, Excel, ZIP) sowie Mixed-Content-Sicherheitswarnungen.
+      </p>
+
+      <!-- URL Input Card -->
+      <div class="scanner-card">
+        <form id="scanForm" class="scan-form">
+          <div class="input-wrapper">
+            <div class="input-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              id="urlInput" 
+              class="url-input" 
+              placeholder="Website-URL eingeben, z. B. https://beispiel.de" 
+              required
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="options-wrapper">
+            <div class="select-group">
+              <label for="maxPagesSelect">Prüftiefe (Max. Seiten):</label>
+              <select id="maxPagesSelect" class="custom-select">
+                <option value="10">10 Seiten (Schnell)</option>
+                <option value="25" selected>25 Seiten (Empfohlen)</option>
+                <option value="50">50 Seiten (Detailliert)</option>
+                <option value="100">100 Seiten (Umfassend)</option>
+                <option value="200">200 Seiten (Große Website)</option>
+                <option value="300">300 Seiten (Maximum)</option>
+              </select>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary">
+              <span class="btn-icon">🚀</span>
+              <span class="btn-text">Prüfung jetzt starten</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Suggestions -->
+        <div class="quick-examples">
+          <span class="quick-label">Beispiel-Websites:</span>
+          <button type="button" class="quick-chip" onclick="setExampleUrl('https://quotes.toscrape.com')">quotes.toscrape.com</button>
+          <button type="button" class="quick-chip" onclick="setExampleUrl('https://example.com')">example.com</button>
+          <button type="button" class="quick-chip" onclick="setExampleUrl('https://httpstat.us')">httpstat.us</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scanning Progress Section (Hidden initially) -->
+    <section id="progressSection" class="progress-section hidden">
+      <div class="progress-card">
+        <div class="progress-header">
+          <div class="progress-info">
+            <div class="spinner"></div>
+            <div>
+              <h3 id="stageTitle" class="stage-title">Prüfung wird vorbereitet...</h3>
+              <p id="targetDisplay" class="target-display">Ziel: -</p>
+            </div>
+          </div>
+          <div class="percent-badge" id="percentBadge">0%</div>
+        </div>
+
+        <div class="progress-bar-container">
+          <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
+        </div>
+
+        <!-- Live Terminal Log -->
+        <div class="terminal-wrapper">
+          <div class="terminal-bar">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <span class="terminal-title">Echtzeit-Scanner-Protokoll</span>
+            <span id="logCount" class="log-count">0 Einträge</span>
+          </div>
+          <div id="terminalLogs" class="terminal-logs">
+            <div class="log-line text-muted">Warte auf Rückmeldung des Python-Scanners...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error Banner -->
+    <div id="errorBanner" class="alert-box alert-error hidden">
+      <div class="alert-icon">⚠️</div>
+      <div id="errorMessage" class="alert-content">Bei der Prüfung ist ein Fehler aufgetreten</div>
+    </div>
+
+    <!-- Results Dashboard Section (Hidden initially) -->
+    <section id="resultsSection" class="results-section hidden">
+      <div class="results-header">
+        <div>
+          <h2 class="section-title">Ergebnisse der Website-Qualitätsprüfung</h2>
+          <p id="scanDurationText" class="section-subtitle">Prüfdauer: - Sekunden</p>
+        </div>
+        <div class="header-actions">
+          <button id="exportCsvBtn" class="btn btn-outline">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            CSV-Bericht exportieren
+          </button>
+          <button id="newScanBtn" class="btn btn-secondary">
+            Neue Prüfung starten
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Cards -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Geprüfte Seiten</div>
+          <div class="metric-value" id="metricPages">0</div>
+          <div class="metric-sub" id="metricAssets">Insgesamt 0 Assets & Links geprüft</div>
+        </div>
+        <div class="metric-card card-warning" id="cardBrokenLinks">
+          <div class="metric-label">Defekte Links (Broken Links)</div>
+          <div class="metric-value text-danger" id="metricBrokenLinks">0</div>
+          <div class="metric-sub">HTTP 404 / 500 / Timeout</div>
+        </div>
+        <div class="metric-card card-warning" id="cardBrokenImages">
+          <div class="metric-label">Defekte Bilder (Missing Images)</div>
+          <div class="metric-value text-warning" id="metricBrokenImages">0</div>
+          <div class="metric-sub">Bilder nicht erreichbar</div>
+        </div>
+        <div class="metric-card card-warning" id="cardBrokenDocs">
+          <div class="metric-label">Defekte Dokumente (Broken Docs)</div>
+          <div class="metric-value text-info" id="metricBrokenDocs">0</div>
+          <div class="metric-sub">PDF, Word, Excel, ZIP</div>
+        </div>
+        <div class="metric-card card-security" id="cardSecurity">
+          <div class="metric-label">Sicherheitswarnungen (Mixed Content)</div>
+          <div class="metric-value text-purple" id="metricSecurity">0</div>
+          <div class="metric-sub">Unsichere HTTP-Assets auf HTTPS</div>
+        </div>
+      </div>
+
+      <!-- Issues Table Section -->
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div class="filter-tabs">
+            <button class="tab-btn active" data-filter="all">Alle (<span id="countAll">0</span>)</button>
+            <button class="tab-btn" data-filter="EXTERN">Defekte Links (<span id="countLinks">0</span>)</button>
+            <button class="tab-btn" data-filter="BILD">Bilder (<span id="countImages">0</span>)</button>
+            <button class="tab-btn" data-filter="DOKUMENT">Dokumente (<span id="countDocs">0</span>)</button>
+            <button class="tab-btn" data-filter="SECURITY">Sicherheit (<span id="countSecurity">0</span>)</button>
+          </div>
+          <div class="search-box">
+            <input type="text" id="tableSearch" placeholder="URL oder Text filtern...">
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="issues-table">
+            <thead>
+              <tr>
+                <th style="width: 150px;">Kategorie</th>
+                <th style="width: 120px;">HTTP-Status</th>
+                <th>Betroffene Ziel-URL</th>
+                <th>Gefunden auf Seite (Quell-URL)</th>
+              </tr>
+            </thead>
+            <tbody id="issuesTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-icon">🎉</div>
+          <h3>Ausgezeichnet! Keine Fehler gefunden</h3>
+          <p>Alle Links, Bilder und Dokumente sind ordnungsgemäß erreichbar und fehlerfrei.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Showcase (Static Overview) -->
+    <section class="features-section">
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h3>Sitemap-Erkennung</h3>
+          <p>Automatische Erkennung und Analyse von WordPress-XML-Sitemaps, Sitemap-Indizes oder rekursive Link-Erfassung.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Multi-Threaded Audit</h3>
+          <p>Maximale Performance mit bis zu 18 parallelen Threads – Hunderte Links und Assets in Sekundenschnelle geprüft.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📑</div>
+          <h3>Dokumenten-Integrität</h3>
+          <p>Prüfung wichtiger Dokumenttypen wie PDF, DOCX, XLSX, PPTX, CSV und ZIP auf einwandfreie Download-Fähigkeit.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Mixed-Content-Warnungen</h3>
+          <p>Aufdecken kritischer Sicherheitsrisiken, wenn auf verschlüsselten HTTPS-Seiten Bilder oder Links unsicher über HTTP eingebunden sind.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>Web QA Auditor Engine • Geschützter Unternehmenszugang • Enterprise Quality Gate</p>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

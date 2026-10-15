@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Binaries & Large Executables
+cloudflared
+
+# Archives
+*.zip
+
+# Cloudflare Wrangler Cache & Artifacts
+.wrangler/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Environment Variables & Sensitive Credentials
+.env
+.env.local
+*.rtf
