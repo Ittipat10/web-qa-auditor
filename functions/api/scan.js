@@ -121,24 +121,34 @@ export async function onRequestPost(context) {
     // Limit assets to check to fit Cloudflare subrequest limit (max 35)
     const items = Array.from(assetsToCheck.entries()).slice(0, 35);
 
-    // Verify assets concurrently
+const PROTECTED_ALIVE_STATUSES = new Set([401, 403, 405, 406, 407, 429, 999]);
+const TRULY_BROKEN_STATUSES = new Set([404, 410, 500, 502, 504, 520, 521, 522, 523, 530]);
+
+    // Verify assets concurrently without flagging login walls or WAF challenges
     await Promise.all(items.map(async ([assetUrl, info]) => {
       try {
         let res = await fetch(assetUrl, {
           method: 'HEAD',
-          headers: { 'User-Agent': USER_AGENT },
+          headers: { 'User-Agent': USER_AGENT, 'Referer': info.source },
           redirect: 'follow'
         });
+        await res.body?.cancel();
 
-        if (res.status === 403 || res.status === 405) {
+        if (res.status >= 400 && res.status !== 429 && res.status !== 999) {
           res = await fetch(assetUrl, {
             method: 'GET',
-            headers: { 'User-Agent': USER_AGENT },
+            headers: { 'User-Agent': USER_AGENT, 'Referer': info.source, 'Range': 'bytes=0-2047' },
             redirect: 'follow'
           });
+          await res.body?.cancel();
         }
 
-        if (res.status >= 400) {
+        if (PROTECTED_ALIVE_STATUSES.has(res.status) || res.headers.get('cf-mitigated')) {
+          return;
+        }
+
+        const isWaf503 = res.status === 503 && (res.headers.get('server') || '').toLowerCase().includes('cloudflare');
+        if (TRULY_BROKEN_STATUSES.has(res.status) || (res.status === 503 && !isWaf503)) {
           brokenResults.push({
             source: info.source,
             broken_url: assetUrl,
@@ -148,13 +158,22 @@ export async function onRequestPost(context) {
           });
         }
       } catch (err) {
-        brokenResults.push({
-          source: info.source,
-          broken_url: assetUrl,
-          status: 'Timeout/Fehler',
-          category: info.cat,
-          text: info.label
-        });
+        try {
+          const host = new URL(assetUrl).hostname;
+          const doh = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=A`, {
+            headers: { 'Accept': 'application/dns-json' }
+          });
+          const dns = await doh.json();
+          if (dns.Status === 3) {
+            brokenResults.push({
+              source: info.source,
+              broken_url: assetUrl,
+              status: 'Domain existiert nicht',
+              category: info.cat,
+              text: info.label
+            });
+          }
+        } catch {}
       }
     }));
 

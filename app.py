@@ -176,9 +176,16 @@ class AppRequestHandler(http.server.BaseHTTPRequestHandler):
             writer = csv.writer(output)
             writer.writerow(['Fehlertyp / Kategorie', 'HTTP-Status', 'Details / Kontext', 'Defekte oder unsichere Ziel-URL', 'Gefunden auf Seite (Quell-URL)'])
 
+            cat_labels = {
+                'INTERN': 'Defekter Interner Link',
+                'EXTERN': 'Defekter Externer Link',
+                'BILD': 'Defektes Bild',
+                'DOKUMENT': 'Defektes Dokument'
+            }
             for b in result.get('broken_results', []):
+                cat_key = b.get('category', 'Asset')
                 writer.writerow([
-                    f"Defekter {b.get('category', 'Asset')}",
+                    cat_labels.get(cat_key, f"Defekter {cat_key}"),
                     b.get('status', 'Fehler'),
                     b.get('text', ''),
                     b.get('broken_url', ''),
